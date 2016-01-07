@@ -5,6 +5,7 @@ class RequestHandler
 	static $base;
 	static $selector;
 
+
 	public function RequestHandler()
 	{
 		throw new Exception("RequestHandler is a static class");
@@ -31,9 +32,72 @@ class RequestHandler
 		return self::$selector;
 	}
 
-	public static function GetSelectorFile($selector)
+	public static function getServiceRegistry($selector)
+	{
+		$serviceRegistry = parse_ini_file(RequestHandler::GetBaseDirectory() . "/ini/serviceRegistry.ini", true);
+
+		if(array_key_exists($selector, $serviceRegistry))
+		{
+			return $serviceRegistry[$selector];
+		}
+
+		return null;
+	}
+	public static function removeSlash($selector)
+	{
+		if(strpos('/', $selector) == 0)
+		{
+			return substr($selector, 1, strlen ( $selector ) -1);
+		}
+		else
+			return $selector;
+	}
+	public static function CheckSelectorService($selector)
 	{
 		return self::GetBaseDirectory() . '/handlers/' . ($selector === false ? self::GetSelectorName() : $selector). '.php';
+	}
+
+	public static function splitUp($str)
+	{
+		return explode("@", $str);
+	}
+	public static function GetSelectorFile($selector)
+	{
+		$selector = self::removeSlash($selector);
+		// look in config file for selected service
+
+		// if service exists proceed
+		$registry = self::getServiceRegistry($selector);
+
+		if($registry && isset($registry[$_SERVER['REQUEST_METHOD']]))
+		{
+			trigger_error("Service $selector Registered and Request Method ".$_SERVER['REQUEST_METHOD']." registered");
+			// service has been registered and request method is allowed, now check if it exists
+			
+			//try
+			//{
+				// split the method up
+				$caller = self::splitUp($registry[$_SERVER['REQUEST_METHOD']]);
+
+				if (file_exists(self::GetBaseDirectory()."/services/".$selector."/controllers/".$caller.".php"))
+				{
+					//header('Cache-Control: no-cache');
+					//header('Pragma: no-cache');
+
+					//include ($inc_file);
+				}
+				else
+				{
+
+					print "Service or controller does not exist";		
+
+				}
+			//}
+			//catch
+
+		}
+
+		//throw new ServiceNotFoundException("$selector");
 	}
 
 	public static function SetSelector($newSelector)
@@ -129,6 +193,7 @@ class RequestHandler
 	}
 }
 
+class ServiceNotFoundException extends Exception{}
 class BadRequestException extends Exception {}
 class FileNotFoundException extends Exception {}
 class RedirectException extends Exception {}

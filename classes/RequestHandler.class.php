@@ -71,20 +71,26 @@ class RequestHandler
 
 		if($registry && isset($registry[$_SERVER['REQUEST_METHOD']]))
 		{
-			trigger_error("Service $selector Registered and Request Method ".$_SERVER['REQUEST_METHOD']." registered");
+			//trigger_error("Service $selector Registered and Request Method ".$_SERVER['REQUEST_METHOD']." registered");
 			// service has been registered and request method is allowed, now check if it exists
 			
-			//try
-			//{
+			ob_end_clean();
+			ob_start();
+			try
+			{
 				// split the method up
 				$caller = self::splitUp($registry[$_SERVER['REQUEST_METHOD']]);
 
-				if (file_exists(self::GetBaseDirectory()."/services/".$selector."/controllers/".$caller.".php"))
+				$inc_file =  self::GetBaseDirectory()."services/".$selector."/controllers/".$caller[0].".php";
+				if (file_exists($inc_file))
 				{
-					//header('Cache-Control: no-cache');
-					//header('Pragma: no-cache');
+					header('Cache-Control: no-cache');
+					header('Pragma: no-cache');
 
-					//include ($inc_file);
+					include ($inc_file);
+
+					// call static function
+					$caller[0]::$caller[1]();
 				}
 				else
 				{
@@ -92,12 +98,22 @@ class RequestHandler
 					print "Service or controller does not exist";		
 
 				}
-			//}
-			//catch
+			}
+			catch (BadRequestException $brex)
+			{
+				trigger_error("Invalid request: " . $brex->getMessage(), E_USER_WARNING);
 
+				if ($selector != '400')
+				{
+					header($_SERVER['SERVER_PROTOCOL'] . ' 400 Bad Request');
+					self::ExecuteRequest('400');
+					exit;
+				}
+			}
+
+			while(ob_get_level() > 0)
+				ob_end_flush();
 		}
-
-		//throw new ServiceNotFoundException("$selector");
 	}
 
 	public static function SetSelector($newSelector)
@@ -116,81 +132,81 @@ class RequestHandler
 			$selector = self::GetSelectorName();
 
 		$inc_file = self::GetSelectorFile($selector);
-
-		ob_end_clean();
-		ob_start();
-
-		try
-		{
-			if (file_exists($inc_file))
-			{
-				header('Cache-Control: no-cache');
-				header('Pragma: no-cache');
-
-				include ($inc_file);
-			}
-			else
-				throw new FileNotFoundException("$selector");
-		}
-		catch (BadRequestException $brex)
-		{
-			trigger_error("Invalid request: " . $brex->getMessage(), E_USER_WARNING);
-
-			if ($selector != '400')
-			{
-				header($_SERVER['SERVER_PROTOCOL'] . ' 400 Bad Request');
-				self::ExecuteRequest('400');
-				exit;
-			}
-		}
-		catch (FileNotFoundException $fofex)
-		{
-			//trigger_error("Invalid selector: " . $fofex->getMessage(), E_USER_WARNING);
-
-			if ($selector != '404')
-			{
-				header($_SERVER['SERVER_PROTOCOL'] . ' 404 File Not Found');
-				self::ExecuteRequest('404');
-				exit;
-			}
-		}
-		catch (FoundElsewhereRedirectException $ferex)
-		{
-			// exception message contains the URL to be redirected to
-			header($_SERVER['SERVER_PROTOCOL'] . ' 302 Found Elsewhere');
-			header('Location: ' . $ferex->getMessage());
-			exit;
-		}
-		catch (RedirectException $rex)
-		{
-			// exception message contains the URL to be redirected to
-			header($_SERVER['SERVER_PROTOCOL'] . ' 301 Moved Permanently');
-			header('Location: ' . $rex->getMessage());
-			exit;
-		}
-		catch (TemporaryRedirectException $trex)
-		{
-			// exception message contains the URL to be redirected to
-			header($_SERVER['SERVER_PROTOCOL'] . ' 307 Moved Temporarily');
-			header('Location: ' . $trex->getMessage());
-			exit;
-		}
-		catch (Exception $ex)
-		{
-			trigger_error("Exception: " . $ex->getMessage(), E_USER_WARNING);
-
-			if ($selector != 'error')
-			{
-				self::ExecuteRequest('error');
-				exit;
-			}
-
-			print "An error has occurred, please try again later.";
-		}
-
-		while(ob_get_level() > 0)
-			ob_end_flush();
 	}
+		// ob_end_clean();
+		// ob_start();
+
+		// try
+		// {
+		// 	if (file_exists($inc_file))
+		// 	{
+		// 		header('Cache-Control: no-cache');
+		// 		header('Pragma: no-cache');
+
+		// 		include ($inc_file);
+		// 	}
+		// 	else
+		// 		throw new FileNotFoundException("$selector");
+		// }
+		// catch (BadRequestException $brex)
+		// {
+		// 	trigger_error("Invalid request: " . $brex->getMessage(), E_USER_WARNING);
+
+		// 	if ($selector != '400')
+		// 	{
+		// 		header($_SERVER['SERVER_PROTOCOL'] . ' 400 Bad Request');
+		// 		self::ExecuteRequest('400');
+		// 		exit;
+		// 	}
+		// }
+		// catch (FileNotFoundException $fofex)
+		// {
+		// 	//trigger_error("Invalid selector: " . $fofex->getMessage(), E_USER_WARNING);
+
+		// 	if ($selector != '404')
+		// 	{
+		// 		header($_SERVER['SERVER_PROTOCOL'] . ' 404 File Not Found');
+		// 		self::ExecuteRequest('404');
+		// 		exit;
+		// 	}
+		// }
+		// catch (FoundElsewhereRedirectException $ferex)
+		// {
+		// 	// exception message contains the URL to be redirected to
+		// 	header($_SERVER['SERVER_PROTOCOL'] . ' 302 Found Elsewhere');
+		// 	header('Location: ' . $ferex->getMessage());
+		// 	exit;
+		// }
+		// catch (RedirectException $rex)
+		// {
+		// 	// exception message contains the URL to be redirected to
+		// 	header($_SERVER['SERVER_PROTOCOL'] . ' 301 Moved Permanently');
+		// 	header('Location: ' . $rex->getMessage());
+		// 	exit;
+		// }
+		// catch (TemporaryRedirectException $trex)
+		// {
+		// 	// exception message contains the URL to be redirected to
+		// 	header($_SERVER['SERVER_PROTOCOL'] . ' 307 Moved Temporarily');
+		// 	header('Location: ' . $trex->getMessage());
+		// 	exit;
+		// }
+		// catch (Exception $ex)
+		// {
+		// 	trigger_error("Exception: " . $ex->getMessage(), E_USER_WARNING);
+
+		// 	if ($selector != 'error')
+		// 	{
+		// 		self::ExecuteRequest('error');
+		// 		exit;
+		// 	}
+
+		// 	print "An error has occurred, please try again later.";
+		// }
+
+		//while(ob_get_level() > 0)
+		//	ob_end_flush();
+	//}
 }
 
 class ServiceNotFoundException extends Exception{}

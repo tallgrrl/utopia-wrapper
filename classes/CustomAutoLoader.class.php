@@ -26,6 +26,8 @@ class CustomAutoLoader
 				return;
 			}
 		}
+
+		die();
 	}
 }
 

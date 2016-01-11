@@ -1,10 +1,8 @@
 <?php
-ini_set("display_errors", 'on');
 /**
  *	index.php. alll
  */
 $GLOBALS['SITE_PARAMS'] = preg_split('[/]', $_SERVER['REQUEST_URI']);
-
 $path = $GLOBALS['SITE_PARAMS'][1];
 $_REQUEST['__select'] = '/'.$path;
 

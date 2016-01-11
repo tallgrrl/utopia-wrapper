@@ -63,7 +63,7 @@
 
     public function trace($msg)
     {
-		trigger_error("Trace Line ----> " . $msg, E_USER_WARNING);
+		trigger_error("Trace Line FROM WRAPPER ----> " . $msg, E_USER_WARNING);
     }
 	
 	public function randomString($length=10, $caps=true, $nums=false, $symbols=false)
